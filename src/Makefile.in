@@ -1,0 +1,76 @@
+# Edit Makefile.in and run ./configure
+
+KVERSION = @KVERSION@
+KDIR = @KDIR@
+KINSTDIR = $(shell dirname @KDIR@)
+KOPTS = @KOPTS@
+IPTABLES_CFLAGS = @IPTABLES_CFLAGS@
+IPTABLES_MODULES = @IPTABLES_MODULES@
+DEPMOD = /sbin/depmod -a $(KVERSION)
+CARGS = @CARGS@
+CC = gcc
+
+# https://www.kernel.org/doc/Documentation/kbuild/modules.txt
+# https://www.kernel.org/doc/Documentation/kbuild/makefiles.txt
+obj-m = xt_DROPREJECT.o
+ccflags-y = @KOPTS@
+
+all: xt_DROPREJECT.ko libxt_DROPREJECT.so
+
+xt_DROPREJECT.ko: xt_DROPREJECT.c Makefile
+	@echo Compiling for kernel $(KVERSION)
+	make -C $(KDIR) M=$(CURDIR) modules CONFIG_DEBUG_INFO=y
+	@touch $@
+	
+sparse: | xt_DROPREJECT.c Makefile
+	@rm -f xt_DROPREJECT.ko xt_DROPREJECT.o
+	@echo Compiling for kernel $(KVERSION)
+	make -C $(KDIR) M=$(CURDIR) modules C=1
+	@touch xt_DROPREJECT.ko
+minstall: | xt_DROPREJECT.ko
+	@echo " *"
+	make -C $(KDIR) M=$(CURDIR) modules_install INSTALL_MOD_PATH=$(DESTDIR)
+	$(DEPMOD)
+mclean:
+	make -C $(KDIR) M=$(CURDIR) clean
+lclean:
+	-rm -f *.so *_sh.o
+clean: mclean lclean
+	-rm -f *.so *.o modules.order
+	
+libxt_DROPREJECT_sh.o: libxt_DROPREJECT.c
+	gcc -O2 -Wall -Wunused $(IPTABLES_CFLAGS) -fPIC -o $@ -c libxt_DROPREJECT.c
+
+
+%.so: %_sh.o
+	gcc -shared -lxtables -o $@ $<
+
+linstall: | libxt_DROPREJECT.so
+	@echo " *"
+	install -D libxt_DROPREJECT.so $(DESTDIR)$(IPTABLES_MODULES)/libxt_DROPREJECT.so
+
+dinstall:
+	@echo " *"
+	@./install-dkms.sh --install
+
+install: minstall linstall
+
+uninstall:
+	-rm -f $(DESTDIR)$(IPTABLES_MODULES)/libxt_DROPREJECT.so
+	@if [ "@DKMSINSTALL@" = dinstall ]; then ./install-dkms.sh --uninstall; fi
+	-rm -f $(DESTDIR)$(KINSTDIR)/extra/xt_DROPREJECT.ko
+
+Makefile: Makefile.in configure
+	./configure --make ${CARGS}
+
+load: all
+	-insmod xt_DROPREJECT.ko
+
+unload:
+	-rmmod xt_DROPREJECT.ko
+
+reload: unload load
+
+ChangeLog:
+	gitlog-to-changelog > ChangeLog
+.PHONY: ChangeLog

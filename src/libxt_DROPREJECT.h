@@ -1,0 +1,2 @@
+struct xt_DROPREJECT {
+};

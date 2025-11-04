@@ -43,7 +43,7 @@ libxt_DROPREJECT_sh.o: libxt_DROPREJECT.c
 
 
 %.so: %_sh.o
-	gcc -shared -lxtables -o $@ $<
+	gcc -shared -o $@ $< -lxtables
 
 linstall: | libxt_DROPREJECT.so
 	@echo " *"

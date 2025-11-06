@@ -43,6 +43,9 @@ static struct xtables_target DROPREJECT_tg_reg = {
 	.save = DROPREJECT_save
 };
 
+#ifndef _init
+#define _init __attribute__((constructor)) _INIT
+#endif
 void _init(void)
 {
 	xtables_register_target(&DROPREJECT_tg_reg);

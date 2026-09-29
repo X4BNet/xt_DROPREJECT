@@ -1,1 +1,19 @@
+# Editor settings
 .vscode/
+
+# Generated build configuration
+/src/Makefile
+
+# Userspace extension build artifacts
+/src/*.so
+/src/*_sh.o
+
+# Linux kernel module build artifacts
+/src/*.o
+/src/*.ko
+/src/*.mod
+/src/*.mod.c
+/src/.*.cmd
+/src/Module.symvers
+/src/modules.order
+/src/.tmp_versions/
